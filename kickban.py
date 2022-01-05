@@ -5,12 +5,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = commands.Bot(command_prefix=".")
-# .start
+PREFIX = "."
+# .help
+client = commands.Bot(command_prefix=PREFIX)
+client.remove_command('help')
+
 
 @client.event
 async def on_ready():
     print("Bot connected")
+
+
+# Delete
+@client.command(pass_context=True)
+@commands.has_permissions(administrator=True)
+async def clear(ctx, amount = 100):
+    await ctx.channel.purge(limit=amount)
+
 
 # Kick User
 @client.command(pass_context=True)
@@ -45,6 +56,23 @@ async def unban(ctx, *, member):
         await ctx.send(f"Unbanned user {user.mention}")
 
         return
+
+
+# Command help
+@client.command(pass_context=True)
+@commands.has_permissions(administrator=True)
+async def help(ctx):
+    await ctx.channel.purge(limit=1)
+
+    emb = discord.Embed(title="Barcha buyruqlar")
+
+    emb.add_field(name="{}clear".format(PREFIX), value="Chatni tozalash")
+    emb.add_field(name="{}kick".format(PREFIX), value="Foydalanuvchini o'chirish")
+    emb.add_field(name="{}ban".format(PREFIX), value="Ban qilish")
+    emb.add_field(name="{}unban".format(PREFIX), value="UnBan qilish")
+
+    await ctx.send(embed = emb)
+
 
 
 # Connect
