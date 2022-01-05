@@ -1,6 +1,10 @@
 import discord
+import os
 from discord.ext import commands
-from config import TOKEN, ID, hello_words, goodbye_words
+from config import hello_words, goodbye_words
+from dotenv import load_dotenv
+
+load_dotenv()
 
 client = commands.Bot(command_prefix=".")
 # .start
@@ -26,6 +30,6 @@ async def on_message(message):
 
 
 # Connect
-token = TOKEN
+token = os.getenv("TOKEN")
 
 client.run(token)
