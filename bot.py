@@ -56,7 +56,7 @@ async def on_message(message):
         cnt = row[0] + 1
         cursor.execute(f'UPDATE users SET MSG={cnt} where id={message.author.id}')
 
-        if row[0] % 5 == 0:
+        if row[0] % 20 == 0:
             lvl = row[1] + 1
             cursor.execute(f'UPDATE users SET LVL={lvl} where id={message.author.id}')
             await message.channel.send(f'{row[1]} - уровень {message.author.name}!')
@@ -106,6 +106,6 @@ async def unban(ctx, *, member):
         return
 
 # Connect
-token = os.getenv("TOKEN")
+token = os.getenv("OTI3NjMzMzQyMTYwMDcyNzA0.YdND3w.ybyaqaxSqAAwtXNeaOgl8kG4uhA")
 
 client.run(token)
