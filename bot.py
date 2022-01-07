@@ -23,21 +23,23 @@ async def on_ready():
         print(guild.id)#вывод id сервера
         serv=guild#без понятия зачем это
         for member in guild.members:#цикл, обрабатывающий список участников
-            cursor.execute(f"SELECT id FROM users where id={member.id}")#проверка, существует ли участник в БД
-            if cursor.fetchone() == None:#Если не существует
-                cursor.execute(f"INSERT INTO users VALUES ({member.id}, '{member.name}', 1, 1)")#вводит все данные об участнике в БД
-            else:#если существует
-                pass
+            if member != client.user:
+                cursor.execute(f"SELECT id FROM users where id={member.id}")#проверка, существует ли участник в БД
+                if cursor.fetchone() == None:#Если не существует
+                    cursor.execute(f"INSERT INTO users VALUES ({member.id}, '{member.name}', 1, 1)")#вводит все данные об участнике в БД
+                else:#если существует
+                    pass
             conn.commit()#применение изменений в БД
 
 # Join channel
 @client.event
 async def on_member_join(member):
+    # print(dir(member.guild))
     cursor.execute(f"SELECT id FROM users where id={member.id}")#все также, существует ли участник в БД
     if cursor.fetchone()==None:#Если не существует
         cursor.execute(f"INSERT INTO users VALUES ({member.id}, '{member.name}',1,1)")#вводит все данные об участнике в БД
-        channel = client.get_channel(927646643443073096)
-        await channel.send(embed = discord.Embed(title = f"Kanalga xush kelibsiz ``{member.name}``", colour = discord.Color.green()))
+        channel = member.guild.system_channel
+        await channel.send(embed = discord.Embed(title = f"Welcome ``{member.name}``", colour = discord.Color.green()))
     else:#Если существует
         pass
     conn.commit()#применение изменений в БД
@@ -46,8 +48,10 @@ async def on_member_join(member):
 # Left channel
 @client.event
 async def on_member_remove(member):
-    channel = client.get_channel(927646643443073096)
-    await channel.send(embed = discord.Embed(title = f"``{member.name}`` o'zincha chiqib getdimi?", colour = discord.Color.red()))
+    channel = member.guild.system_channel
+    await channel.send(embed = discord.Embed(title = f"``{member.name}`` left the group!", colour = discord.Color.red()))
+    cursor.execute(f"DELETE FROM users WHERE id={member.id}")#вводит все данные об участнике в БД
+    conn.commit()#применение изменений в БД
 
 # Message
 @client.event
@@ -68,7 +72,7 @@ async def on_message(message):
 # Command help
 @client.command(pass_context=True)
 async def help(ctx):
-    await ctx.send(f"Assalomu aleykum {ctx.author.name}")
+    await ctx.send(f"Hello {ctx.author.name}")
 
 
 # Kick User
@@ -106,6 +110,6 @@ async def unban(ctx, *, member):
         return
 
 # Connect
-token = os.getenv("OTI3NjMzMzQyMTYwMDcyNzA0.YdND3w.ybyaqaxSqAAwtXNeaOgl8kG4uhA")
+token = os.getenv("TOKEN")
 
 client.run(token)
