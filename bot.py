@@ -1,6 +1,9 @@
 import sqlite3
 import os
 import discord
+import giphy_client
+from giphy_client.rest import ApiException
+import random
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -9,11 +12,11 @@ load_dotenv()
 intents = discord.Intents.default()
 intents.members = True
 
-PREFIX = "."
+PREFIX = "/"
 client = commands.Bot(command_prefix=PREFIX, intents=intents)
 client.remove_command('help')
 
-conn = sqlite3.connect("discord.db") # или :memory:
+conn = sqlite3.connect("discord.db")
 cursor = conn.cursor()
 
 @client.event
@@ -39,7 +42,7 @@ async def on_member_join(member):
     if cursor.fetchone()==None:#Если не существует
         cursor.execute(f"INSERT INTO users VALUES ({member.id}, '{member.name}',1,1)")#вводит все данные об участнике в БД
         channel = member.guild.system_channel
-        await channel.send(embed = discord.Embed(title = f"Welcome ``{member.name}``", colour = discord.Color.green()))
+        await channel.send(embed = discord.Embed(title = f"``{member.name}`` connected to the channel", colour = discord.Color.green()))
     else:#Если существует
         pass
     conn.commit()#применение изменений в БД
@@ -49,7 +52,7 @@ async def on_member_join(member):
 @client.event
 async def on_member_remove(member):
     channel = member.guild.system_channel
-    await channel.send(embed = discord.Embed(title = f"``{member.name}`` left the group!", colour = discord.Color.red()))
+    await channel.send(embed = discord.Embed(title = f"``{member.name}`` left channel!", colour = discord.Color.red()))
     cursor.execute(f"DELETE FROM users WHERE id={member.id}")#вводит все данные об участнике в БД
     conn.commit()#применение изменений в БД
 
@@ -63,14 +66,31 @@ async def on_message(message):
         if row[0] % 20 == 0:
             lvl = row[1] + 1
             cursor.execute(f'UPDATE users SET LVL={lvl} where id={message.author.id}')
-            await message.channel.send(f'{row[1]} - уровень {message.author.name}!')
+            emb = discord.Embed(
+                title=f":chart_with_upwards_trend: Congratulations {message.author.name}!",
+                description=f"Your level is up to {row[1]}"
+            )
+            await message.channel.send(embed=emb)
+            # await message.channel.send(f'{row[1]}-LEVEL {message.author.name}!')
 
 
     await client.process_commands(message)#Далее это будет необходимо для ctx команд
     conn.commit()#применение изменений в БД
 
+
+# listgames
+@client.command()
+async def listgames(ctx):
+    lst = cursor.execute(f"SELECT title, desc, url, rating FROM games").fetchall()
+    for row in lst:
+        emb = discord.Embed(title=f"{row[0]}", description = f"{row[1]}", colour = discord.Color.blue())
+        emb.set_image(url = f"{row[2]}")
+        emb.add_field(name = "Rating", value=row[3])
+        await ctx.send(embed = emb)
+
+
 # Command help
-@client.command(pass_context=True)
+@client.command()
 async def help(ctx):
     await ctx.send(f"Hello {ctx.author.name}")
 
@@ -108,6 +128,26 @@ async def unban(ctx, *, member):
         await ctx.send(f"Unbanned user {user.mention}")
 
         return
+
+
+# Gif command
+@client.command()
+async def gif(ctx, *, q = "Smile"):
+    api_key = os.getenv("API_KEY")
+    api_instance = giphy_client.DefaultApi()
+
+    try:
+        api_response = api_instance.gifs_search_get(api_key, q, limit=5, rating="g")
+        lst = list(api_response.data)
+        giff = random.choice(lst)
+
+        emb = discord.Embed(title = q.title(), colour = discord.Color.green())
+        emb.set_image(url = f"https://media.giphy.com/media/{giff.id}/giphy.gif")
+        await ctx.channel.send(embed=emb)
+
+    except ApiException as e:
+        print("Exception when calling DefaultApi -> gifs_search_get: %s\n" % e)
+
 
 # Connect
 token = os.getenv("TOKEN")
